@@ -195,6 +195,10 @@ void RuntimeFeatureSettings::init() {
 	SetupOnOffSetting(settings[RuntimeFeatureSettingType::EnableGridViewLoopPads],
 	                  STRING_FOR_COMMUNITY_FEATURE_GRID_VIEW_LOOP_PADS, "enableGridViewLoopPads",
 	                  RuntimeFeatureStateToggle::Off);
+
+	// Step Record
+	SetupOnOffSetting(settings[RuntimeFeatureSettingType::StepRecord], STRING_FOR_COMMUNITY_FEATURE_STEP_RECORD,
+	                  "stepRecord", RuntimeFeatureStateToggle::Off);
 }
 
 void RuntimeFeatureSettings::readSettingsFromFile(StorageManager& bdsm) {
