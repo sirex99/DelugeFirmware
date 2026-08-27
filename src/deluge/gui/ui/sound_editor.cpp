@@ -705,7 +705,7 @@ void SoundEditor::blinkShortcut() {
 		if ((counterForNow & paramShortcutBlinkFrequency) == 0) {
 			PadLEDs::flashMainPad(currentParamShorcutX, currentParamShorcutY);
 		}
-		uiTimerManager.setTimer(TimerName::SHORTCUT_BLINK, 180);
+		uiTimerManager.setTimer(TimerName::SHORTCUT_BLINK, FlashStorage::shortcutBlinkInterval);
 	}
 
 	else {
@@ -718,7 +718,8 @@ void SoundEditor::blinkShortcut() {
 				}
 			}
 		}
-		uiTimerManager.setTimer(TimerName::SHORTCUT_BLINK, 20);
+		// The source blink keeps the same 9:1 ratio to the param blink as the original 180ms/20ms pair.
+		uiTimerManager.setTimer(TimerName::SHORTCUT_BLINK, FlashStorage::shortcutBlinkInterval / 9);
 	}
 
 	shortcutBlinkCounter++;

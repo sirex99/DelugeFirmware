@@ -181,8 +181,9 @@ enum Entries {
 173: default disabled scales high byte
 174: accessibilityShortcuts
 175: accessibilityMenuHighlighting
-176: default new clip type
-177: use last clip type
+ 176: default new clip type
+ 177: use last clip type
+ 198-199: shortcut blink interval (ms, little-endian)
 */
 
 uint8_t defaultScale;
@@ -238,6 +239,8 @@ static_assert(NUM_PRESET_SCALES <= 16);
 
 OutputType defaultNewClipType = OutputType::SYNTH;
 bool defaultUseLastClipType = true;
+
+int32_t shortcutBlinkInterval = kDefaultShortcutBlinkInterval;
 
 void resetSettings() {
 
@@ -336,6 +339,8 @@ void resetSettings() {
 
 	defaultNewClipType = OutputType::SYNTH;
 	defaultUseLastClipType = true;
+
+	shortcutBlinkInterval = kDefaultShortcutBlinkInterval;
 }
 
 void resetMidiFollowSettings() {
@@ -727,6 +732,11 @@ void readSettings() {
 	else {
 		defaultUseLastClipType = buffer[177];
 	}
+
+	shortcutBlinkInterval = buffer[198] | (buffer[199] << 8);
+	if (shortcutBlinkInterval < kMinShortcutBlinkInterval || shortcutBlinkInterval > kMaxShortcutBlinkInterval) {
+		shortcutBlinkInterval = kDefaultShortcutBlinkInterval;
+	}
 }
 
 static bool areMidiFollowSettingsValid(std::span<uint8_t> buffer) {
@@ -992,6 +1002,9 @@ void writeSettings() {
 
 	buffer[176] = util::to_underlying(defaultNewClipType);
 	buffer[177] = defaultUseLastClipType;
+
+	buffer[198] = shortcutBlinkInterval & 0xFF;
+	buffer[199] = (shortcutBlinkInterval >> 8) & 0xFF;
 
 	R_SFLASH_EraseSector(0x80000 - 0x1000, SPIBSC_CH, SPIBSC_CMNCR_BSZ_SINGLE, 1, SPIBSC_OUTPUT_ADDR_24);
 	R_SFLASH_ByteProgram(0x80000 - 0x1000, buffer.data(), 256, SPIBSC_CH, SPIBSC_CMNCR_BSZ_SINGLE, SPIBSC_1BIT,

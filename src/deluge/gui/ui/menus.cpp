@@ -40,6 +40,7 @@
 #include "gui/menu_item/defaults/pad_brightness.h"
 #include "gui/menu_item/defaults/scale.h"
 #include "gui/menu_item/defaults/session_layout.h"
+#include "gui/menu_item/defaults/shortcut_blink_interval.h"
 #include "gui/menu_item/defaults/slice_mode.h"
 #include "gui/menu_item/defaults/startup_song_mode.h"
 #include "gui/menu_item/defaults/swing_interval.h"
@@ -712,6 +713,8 @@ swing::Interval swingIntervalMenu{STRING_FOR_SWING_INTERVAL};
 // Pads menu
 shortcuts::Version shortcutsVersionMenu{STRING_FOR_SHORTCUTS_VERSION, STRING_FOR_SHORTCUTS_VER_MENU_TITLE};
 menu_item::keyboard::Layout keyboardLayoutMenu{STRING_FOR_KEYBOARD_FOR_TEXT, STRING_FOR_KEY_LAYOUT};
+defaults::ShortcutBlinkInterval shortcutBlinkIntervalMenu{STRING_FOR_SHORTCUT_BLINK_INTERVAL,
+                                                          STRING_FOR_SHORTCUT_BLINK_INTERVAL};
 
 // Colours submenu
 Submenu coloursSubmenu{
@@ -731,6 +734,7 @@ Submenu padsSubmenu{
     {
         &shortcutsVersionMenu,
         &keyboardLayoutMenu,
+        &shortcutBlinkIntervalMenu,
         &coloursSubmenu,
     },
 };

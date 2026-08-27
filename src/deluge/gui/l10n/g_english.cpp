@@ -361,6 +361,7 @@ PLACE_SDRAM_DATA Language english{
         {STRING_FOR_PLAY_DIRECTION, "Play direction"},
         {STRING_FOR_SHORTCUTS_VERSION, "Shortcuts version"},
         {STRING_FOR_KEYBOARD_FOR_TEXT, "Keyboard for text"},
+        {STRING_FOR_SHORTCUT_BLINK_INTERVAL, "Shortcut blink interval"},
         {STRING_FOR_LOOP_MARGINS, "Loop margins"},
         {STRING_FOR_SAMPLING_MONITORING, "Sampling monitoring"},
         {STRING_FOR_SAMPLE_PREVIEW, "Sample preview"},
