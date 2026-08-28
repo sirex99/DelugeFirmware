@@ -23,6 +23,7 @@
 #include "gui/ui/keyboard/keyboard_screen.h"
 #include "gui/ui/sound_editor.h"
 #include "gui/ui_timer_manager.h"
+#include "gui/views/audio_clip_view.h"
 #include "gui/views/instrument_clip_view.h"
 #include "gui/waveform/waveform_basic_navigator.h"
 #include "gui/waveform/waveform_renderer.h"
@@ -673,7 +674,22 @@ ActionResult SampleMarkerEditor::buttonAction(deluge::hid::Button b, bool on, bo
 	// Horizontal encoder button
 	else if (b == X_ENC) {
 		if (on) {
-			if (isNoUIModeActive() || isUIModeActiveExclusively(UI_MODE_AUDITIONING)) {
+
+			// Y + X: set the clip length to match the trimmed sample, so it plays at natural speed (no time-stretch).
+			if (Buttons::isButtonPressed(deluge::hid::button::Y_ENC)) {
+				if (isNoUIModeActive()) {
+					if (inCardRoutine) {
+						return ActionResult::REMIND_ME_OUTSIDE_CARD_ROUTINE;
+					}
+					// Only relevant for audio clips - the marker editor also handles kit / drum samples.
+					if (getCurrentAudioClip()) {
+						audioClipView.setClipLengthEqualToSampleLength();
+					}
+				}
+			}
+
+			// Otherwise, hold to zoom
+			else if (isNoUIModeActive() || isUIModeActiveExclusively(UI_MODE_AUDITIONING)) {
 				currentUIMode |= UI_MODE_HOLDING_HORIZONTAL_ENCODER_BUTTON;
 			}
 		}
