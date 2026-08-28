@@ -93,6 +93,7 @@ void Clip::cloneFrom(Clip const* otherClip) {
 	lastProcessedPos = otherClip->lastProcessedPos;
 	repeatCount = otherClip->repeatCount;
 	armedForRecording = otherClip->armedForRecording;
+	armedForOneShotRecord = otherClip->armedForOneShotRecord;
 	launchStyle = otherClip->launchStyle;
 }
 
@@ -663,6 +664,9 @@ void Clip::writeDataToFile(Serializer& writer, Song* song) {
 	writer.writeAttribute("isPlaying", activeIfNoSolo);
 	writer.writeAttribute("isSoloing", soloingInSessionMode);
 	writer.writeAttribute("isArmedForRecording", armedForRecording);
+	if (armedForOneShotRecord) {
+		writer.writeAttribute("isArmedForOneShotRecord", armedForOneShotRecord);
+	}
 	writer.writeAttribute("length", loopLength);
 	if (sequenceDirectionMode != SequenceDirection::FORWARD) {
 		writer.writeAttribute("sequenceDirection", sequenceDirectionModeToString(sequenceDirectionMode));
@@ -706,6 +710,10 @@ void Clip::readTagFromFile(Deserializer& reader, char const* tagName, Song* song
 
 	else if (!strcmp(tagName, "isArmedForRecording")) {
 		armedForRecording = reader.readTagOrAttributeValueInt();
+	}
+
+	else if (!strcmp(tagName, "isArmedForOneShotRecord")) {
+		armedForOneShotRecord = reader.readTagOrAttributeValueInt();
 	}
 
 	else if (!strcmp(tagName, "status")) { // For backwards compatibility
@@ -807,8 +815,18 @@ void Clip::prepareForDestruction(ModelStackWithTimelineCounter* modelStack,
 
 // Virtual function, extended by InstrumentClip.
 void Clip::posReachedEnd(ModelStackWithTimelineCounter* modelStack) {
+	// If this Clip is armed for one-shot record, act as if the RECORD button was pressed at the end of the existing
+	// clip length: disable recording so the clip doesn't auto-extend, and the recording finishes here. This also
+	// works when record mode is toggled on while the Clip is already looping and thus not in linear recording.
+	if (armedForOneShotRecord && playbackHandler.recording == RecordingMode::NORMAL) {
+		playbackHandler.stopAnyRecording();
+		if (getCurrentlyRecordingLinearly()) {
+			finishLinearRecording(modelStack);
+		}
+	}
+
 	// If linear recording (which means it must be a loop / session playback if we reached the end)
-	if (getCurrentlyRecordingLinearly()) {
+	else if (getCurrentlyRecordingLinearly()) {
 
 		// If they exited recording mode (as in the illuminated RECORD button), don't auto extend
 		if (playbackHandler.recording == RecordingMode::OFF) {

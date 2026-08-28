@@ -2479,12 +2479,18 @@ RGB View::getClipMuteSquareColour(Clip* clip, RGB thisColour, bool allowMIDIFlas
 
 			// Bright colour
 			if (clip->wantsToBeginLinearRecording(currentSong)) {
+				if (clip->armedForOneShotRecord) {
+					return colours::blue;
+				}
 				if (shouldGoPurple) {
 					return colours::magenta;
 				}
 				return colours::red;
 			}
 			// Dull colour, cos can't actually begin linear recording despite being armed
+			if (clip->armedForOneShotRecord) {
+				return colours::blue_dull;
+			}
 			if (shouldGoPurple) {
 				return colours::magenta_dull;
 			}
@@ -2539,6 +2545,38 @@ RGB View::getClipMuteSquareColour(Clip* clip, RGB thisColour, bool allowMIDIFlas
 	return thisColour;
 }
 
+// Cycles a Clip's recording-arm mode on each press, while holding RECORD. The order is:
+// OFF -> red (armed) -> purple (overdub, audio clips only) -> blue (one-shot record) -> OFF
+void View::toggleClipRecordingArmState(Clip* clip) {
+	if (!clip->armedForRecording) {
+		// OFF -> red
+		clip->armedForRecording = true;
+		clip->armedForOneShotRecord = false;
+		if (clip->type == ClipType::AUDIO) {
+			((AudioClip*)clip)->overdubsShouldCloneOutput = false;
+			currentSong->defaultAudioClipOverdubOutputCloning = 0;
+		}
+	}
+	else if (clip->armedForOneShotRecord) {
+		// blue -> OFF
+		clip->armedForRecording = false;
+		clip->armedForOneShotRecord = false;
+		if (clip->type == ClipType::AUDIO) {
+			((AudioClip*)clip)->overdubsShouldCloneOutput = false;
+			currentSong->defaultAudioClipOverdubOutputCloning = 0;
+		}
+	}
+	else if (clip->type == ClipType::AUDIO && !((AudioClip*)clip)->overdubsShouldCloneOutput) {
+		// red -> purple
+		((AudioClip*)clip)->overdubsShouldCloneOutput = true;
+		currentSong->defaultAudioClipOverdubOutputCloning = 1;
+	}
+	else {
+		// red (instrument) or purple (audio) -> blue
+		clip->armedForOneShotRecord = true;
+	}
+}
+
 ActionResult View::clipStatusPadAction(Clip* clip, bool on, int32_t yDisplayIfInSessionView) {
 
 	switch (currentUIMode) {
@@ -2557,23 +2595,7 @@ ActionResult View::clipStatusPadAction(Clip* clip, bool on, int32_t yDisplayIfIn
 
 	case UI_MODE_VIEWING_RECORD_ARMING:
 		if (on) {
-			if (!clip->armedForRecording) {
-				clip->armedForRecording = true;
-				if (clip->type == ClipType::AUDIO) {
-					((AudioClip*)clip)->overdubsShouldCloneOutput = false;
-					currentSong->defaultAudioClipOverdubOutputCloning = 0;
-				}
-			}
-			else {
-				if (clip->type == ClipType::AUDIO && !((AudioClip*)clip)->overdubsShouldCloneOutput) {
-					((AudioClip*)clip)->overdubsShouldCloneOutput = true;
-					currentSong->defaultAudioClipOverdubOutputCloning = 1;
-					break; // No need to reassess greyout
-				}
-				else {
-					clip->armedForRecording = false;
-				}
-			}
+			toggleClipRecordingArmState(clip);
 			PadLEDs::reassessGreyout(true);
 		}
 		break;
@@ -2582,7 +2604,7 @@ ActionResult View::clipStatusPadAction(Clip* clip, bool on, int32_t yDisplayIfIn
 		// If the user was just quick and is actually holding the record button but the submode just hasn't changed
 		// yet...
 		if (on && Buttons::isButtonPressed(deluge::hid::button::RECORD)) {
-			clip->armedForRecording = !clip->armedForRecording;
+			toggleClipRecordingArmState(clip);
 			sessionView.timerCallback(); // Get into UI_MODE_VIEWING_RECORD_ARMING. TODO: this needs doing properly -
 			                             // what if we're in a Clip view?
 			break;

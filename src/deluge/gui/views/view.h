@@ -95,6 +95,7 @@ public:
 	void endMIDILearn();
 	[[nodiscard]] RGB getClipMuteSquareColour(Clip* clip, RGB thisColour, bool allowMIDIFlash = true);
 	ActionResult clipStatusPadAction(Clip* clip, bool on, int32_t yDisplayIfInSessionView = -1);
+	void toggleClipRecordingArmState(Clip* clip);
 	void flashPlayEnable();
 	void flashPlayDisable();
 	void flashPlayRoutine();

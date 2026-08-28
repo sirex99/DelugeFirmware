@@ -23,6 +23,7 @@ constexpr Colour cyan = RGB(0, 128, 128);
 constexpr Colour darkblue = RGB(0, 128, 255);
 constexpr Colour blue = RGB(0, 0, 255);
 constexpr Colour purple = RGB(128, 0, 255);
+constexpr Colour blue_dull = RGB(15, 15, 60);
 constexpr Colour magenta_full = RGB(255, 0, 255);
 constexpr Colour magenta = RGB(128, 0, 128);
 constexpr Colour magenta_dull = RGB(60, 15, 60);

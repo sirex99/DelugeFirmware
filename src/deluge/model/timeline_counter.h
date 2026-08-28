@@ -50,4 +50,5 @@ public:
 
 	ParamManagerForTimeline paramManager;
 	bool armedForRecording{true};
+	bool armedForOneShotRecord{false};
 };

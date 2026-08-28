@@ -4166,12 +4166,11 @@ void SessionView::gridHandlePadsLaunchToggleArming(Clip* clip, bool immediate) {
 			session.soloClipAction(clip, kInternalButtonPressLatency);
 		}
 		else if (viewingRecordArmingActive) {
-			// Here I removed the overdubbing settings
-			clip->armedForRecording = !clip->armedForRecording;
+			view.toggleClipRecordingArmState(clip);
 			PadLEDs::reassessGreyout(true);
 		}
 		else if (currentUIMode == UI_MODE_NONE && Buttons::isButtonPressed(deluge::hid::button::RECORD)) {
-			clip->armedForRecording = !clip->armedForRecording;
+			view.toggleClipRecordingArmState(clip);
 			sessionView.timerCallback();
 		}
 		else if ((currentUIMode == UI_MODE_NONE || currentUIMode == UI_MODE_CLIP_PRESSED_IN_SONG_VIEW
