@@ -4517,6 +4517,10 @@ void InstrumentClip::recordNoteOn(ModelStackWithNoteRow* modelStack, int32_t vel
 	else if (forcePos.has_value()) {
 		// Step record: place the note at an explicit position, bypassing quantization entirely.
 		quantizedPos = *forcePos;
+
+		// Step record is a forward, step-by-step concept: the note always lands as a forward note at the cursor,
+		// regardless of the clip's current (possibly reversed, ping-ponging, or stale-when-stopped) play direction.
+		reversed = false;
 	}
 	else {
 		uint32_t unquantizedPos = modelStack->getLivePos();
