@@ -4211,7 +4211,7 @@ int32_t InstrumentClipView::getVelocityToSound(int32_t velocity) {
 // sub-function of AuditionPadAction
 // audition pad is pressed, we'll either do a silent audition or non-silent audition
 bool InstrumentClipView::startAuditioningRow(int32_t velocity, int32_t yDisplay, bool shiftButtonDown, bool isKit,
-                                             NoteRow* noteRowOnActiveClip, Drum* drum) {
+                                             NoteRow* noteRowOnActiveClip, Drum* drum, bool displayNoteCode) {
 	bool doSilentAudition = false;
 
 	int32_t velocityToSound = getVelocityToSound(velocity);
@@ -4257,7 +4257,9 @@ bool InstrumentClipView::startAuditioningRow(int32_t velocity, int32_t yDisplay,
 		enterUIMode(UI_MODE_AUDITIONING);
 	}
 
-	drawNoteCode(yDisplay);
+	if (displayNoteCode) {
+		drawNoteCode(yDisplay);
+	}
 	bool lastAuditionedYDisplayChanged = lastAuditionedYDisplay != yDisplay;
 	lastAuditionedYDisplay = yDisplay;
 
@@ -4299,7 +4301,8 @@ void InstrumentClipView::potentiallyRefreshNoteRowMenu() {
 
 // sub-function of AuditionPadAction
 // pad is released, end previous audition pad press
-void InstrumentClipView::finishAuditioningRow(int32_t yDisplay, NoteRow* noteRowOnActiveClip) {
+void InstrumentClipView::finishAuditioningRow(int32_t yDisplay, ModelStackWithNoteRow* modelStack,
+                                              NoteRow* noteRowOnActiveClip) {
 	if (auditionPadIsPressed[yDisplay]) {
 		auditionPadIsPressed[yDisplay] = 0;
 		lastAuditionedVelocityOnScreen[yDisplay] = 255;
