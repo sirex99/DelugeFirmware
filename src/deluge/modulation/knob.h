@@ -33,14 +33,24 @@ public:
 
 class MIDIKnob : public Knob {
 public:
-	MIDIKnob() {}
+	MIDIKnob() = default;
 	bool isRelative() { return relative; }
 	bool is14Bit() { return (midiInput.noteOrCC == 128); }
 	bool topValueIs127() { return (midiInput.noteOrCC < 128 && !relative); }
 	LearnedMIDI midiInput;
-	bool relative;
-	bool previousPositionSaved;
-	int32_t previousPosition;
+	bool relative = false;
+	/// True if this CC is a momentary switch (e.g. a sustain pedal) rather than a knob. Value >= 64
+	/// snaps the parameter to its top value; value < 64 restores the value it had before the switch
+	/// went down. Auto-detected when a "relative" knob receives a value of 0 (never a valid relative
+	/// increment), and persisted in the song/kit file like `relative`.
+	bool momentary = false;
+
+	// Transient switch state - not serialized.
+	bool momentaryDown = false;
+	int32_t momentaryBaseKnobPos = 0;
+
+	bool previousPositionSaved = false;
+	int32_t previousPosition = 0;
 };
 
 class ModKnob : public Knob {

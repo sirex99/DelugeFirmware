@@ -774,6 +774,7 @@ void ModControllableAudio::writeTagsToFile(Serializer& writer) {
 			    writer,
 			    MIDI_MESSAGE_CC); // Writes channel and CC, but not device - we do that below.
 			writer.writeAttribute("relative", knob->relative);
+			writer.writeAttribute("momentary", knob->momentary);
 			writer.writeAttribute("controlsParam", params::paramNameForFile(unpatchedParamKind_,
 			                                                                knob->paramDescriptor.getJustTheParam()));
 			if (!knob->paramDescriptor.isJustAParam()) { // TODO: this only applies to Sounds
@@ -1088,6 +1089,7 @@ doReadPatchedParam:
 				uint8_t channel;
 				uint8_t ccNumber;
 				bool relative;
+				bool momentary = false;
 				uint8_t p = params::GLOBAL_NONE;
 				PatchSource s = PatchSource::NOT_AVAILABLE;
 				PatchSource s2 = PatchSource::NOT_AVAILABLE;
@@ -1104,6 +1106,9 @@ doReadPatchedParam:
 					}
 					else if (!strcmp(tagName, "relative")) {
 						relative = reader.readTagOrAttributeValueInt();
+					}
+					else if (!strcmp(tagName, "momentary")) {
+						momentary = reader.readTagOrAttributeValueInt();
 					}
 					else if (!strcmp(tagName, "controlsParam")) {
 						// if the unpatched kind for the current mod controllable is sound then we also want to check
@@ -1129,6 +1134,7 @@ doReadPatchedParam:
 						newKnob->midiInput.channelOrZone = channel;
 						newKnob->midiInput.noteOrCC = ccNumber;
 						newKnob->relative = relative;
+						newKnob->momentary = momentary;
 
 						if (s == PatchSource::NOT_AVAILABLE) {
 							newKnob->paramDescriptor.setToHaveParamOnly(p);
@@ -1219,9 +1225,18 @@ bool ModControllableAudio::offerReceivedCCToLearnedParamsForClip(MIDIDevice* fro
 
 			messageUsed = true;
 
-			// See if this message is evidence that the knob is not "relative"
+			// See if this message is evidence about what kind of controller this is.
 			if (value >= 16 && value < 112) {
+				// A mid-range value means this is a regular (absolute) knob.
 				knob->relative = false;
+				knob->momentary = false;
+			}
+			else if (knob->relative && value == 0) {
+				// A relative encoder never sends 0 - it's not a valid +/- increment. A momentary switch
+				// (e.g. sustain pedal) sends 0 on release. So this is a momentary switch, not a knob.
+				// A later mid-range value (above) will undo this if it turns out to be a real knob.
+				knob->relative = false;
+				knob->momentary = true;
 			}
 
 			int32_t modPos = 0;
@@ -1266,8 +1281,29 @@ bool ModControllableAudio::offerReceivedCCToLearnedParamsForClip(MIDIDevice* fro
 				int32_t knobPos =
 				    modelStackWithParam->paramCollection->paramValueToKnobPos(currentValue, modelStackWithParam);
 
-				// calculate new knob position based on value received and deluge current value
-				newKnobPos = MidiTakeover::calculateKnobPos(knobPos, value, knob, false, CC_NUMBER_NONE, isStepEditing);
+				if (knob->momentary) {
+					// Momentary switch: value >= 64 (pedal down) snaps the param to its top value and
+					// remembers where it was; value < 64 (pedal up) restores that remembered value.
+					bool isDown = (value >= 64);
+					if (isDown != knob->momentaryDown) {
+						knob->momentaryDown = isDown;
+						if (isDown) {
+							knob->momentaryBaseKnobPos = knobPos;
+							newKnobPos = 64;
+						}
+						else {
+							newKnobPos = knob->momentaryBaseKnobPos;
+						}
+					}
+					else {
+						continue; // Same state as before - no change to make
+					}
+				}
+				else {
+					// calculate new knob position based on value received and deluge current value
+					newKnobPos =
+					    MidiTakeover::calculateKnobPos(knobPos, value, knob, false, CC_NUMBER_NONE, isStepEditing);
+				}
 
 				// is the cc being received for the same value as the current knob pos? If so, do nothing
 				if (newKnobPos == knobPos) {
@@ -1316,9 +1352,18 @@ bool ModControllableAudio::offerReceivedCCToLearnedParamsForSong(
 
 			messageUsed = true;
 
-			// See if this message is evidence that the knob is not "relative"
+			// See if this message is evidence about what kind of controller this is.
 			if (value >= 16 && value < 112) {
+				// A mid-range value means this is a regular (absolute) knob.
 				knob->relative = false;
+				knob->momentary = false;
+			}
+			else if (knob->relative && value == 0) {
+				// A relative encoder never sends 0 - it's not a valid +/- increment. A momentary switch
+				// (e.g. sustain pedal) sends 0 on release. So this is a momentary switch, not a knob.
+				// A later mid-range value (above) will undo this if it turns out to be a real knob.
+				knob->relative = false;
+				knob->momentary = true;
 			}
 
 			int32_t modPos = 0;
@@ -1356,8 +1401,29 @@ bool ModControllableAudio::offerReceivedCCToLearnedParamsForSong(
 				int32_t knobPos =
 				    modelStackWithParam->paramCollection->paramValueToKnobPos(currentValue, modelStackWithParam);
 
-				// calculate new knob position based on value received and deluge current value
-				newKnobPos = MidiTakeover::calculateKnobPos(knobPos, value, knob, false, CC_NUMBER_NONE, isStepEditing);
+				if (knob->momentary) {
+					// Momentary switch: value >= 64 (pedal down) snaps the param to its top value and
+					// remembers where it was; value < 64 (pedal up) restores that remembered value.
+					bool isDown = (value >= 64);
+					if (isDown != knob->momentaryDown) {
+						knob->momentaryDown = isDown;
+						if (isDown) {
+							knob->momentaryBaseKnobPos = knobPos;
+							newKnobPos = 64;
+						}
+						else {
+							newKnobPos = knob->momentaryBaseKnobPos;
+						}
+					}
+					else {
+						continue; // Same state as before - no change to make
+					}
+				}
+				else {
+					// calculate new knob position based on value received and deluge current value
+					newKnobPos =
+					    MidiTakeover::calculateKnobPos(knobPos, value, knob, false, CC_NUMBER_NONE, isStepEditing);
+				}
 
 				// is the cc being received for the same value as the current knob pos? If so, do nothing
 				if (newKnobPos == knobPos) {
@@ -1714,6 +1780,8 @@ midiKnobFound:
 		knob->midiInput.device = fromDevice;
 		knob->paramDescriptor = paramDescriptor;
 		knob->relative = (whichKnob != 128); // Guess that it's relative, unless this is a pitch-bend "knob"
+		knob->momentary = false;             // Freshly learned CCs start as ordinary knobs
+		knob->momentaryDown = false;
 	}
 
 	if (overwroteExistingKnob) {
